@@ -25,7 +25,7 @@ var Spinner *spinner.Spinner
 // GetTags returns Tags, prioritising command line parameter over vars file
 func (ctx *VarOptions) GetTags() string {
 	if ctx.Tags == "" {
-		ctx.handleTagExclusions(ctx.TagExclusions) // only process tag exclusions from vars file if not supplied via the command line
+		ctx.Tags = CucumberTagExclusionsListToString(ctx.TagExclusions) // only process tag exclusions from vars file if not supplied via the command line
 	}
 	return ctx.Tags
 }

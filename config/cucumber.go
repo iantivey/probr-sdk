@@ -13,8 +13,8 @@ func CucumberTagsListToString(tags []string) string {
 	return strings.Join(tagList, ",")
 }
 
-// Handle tag exclusions provided via the config vars file
-func ConfigTagExclusionsListToString(tags []string) string {
+// CucumberTagExclusionsListToString tag exclusions provided via the config vars file
+func CucumberTagExclusionsListToString(tags []string) string {
 	var tagList []string
 	for _, tag := range tags {
 		tagList = append(tagList, "~@"+tag)
