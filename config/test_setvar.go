@@ -6,7 +6,8 @@ import (
 	"testing"
 )
 
-func Test_setStringVar(t *testing.T) {
+// TestSetStringVar ...
+func TestSetStringVar(t *testing.T) {
 	defaultValue := "default value"
 	tests := []struct {
 		testName            string
@@ -49,7 +50,8 @@ func Test_setStringVar(t *testing.T) {
 	}
 }
 
-func Test_setStringSliceVar(t *testing.T) {
+// TestSetStringSliceVar ...
+func TestSetStringSliceVar(t *testing.T) {
 	defaultValue := []string{"one", "one", "two", "three", "five", "eight"}
 
 	tests := []struct {
