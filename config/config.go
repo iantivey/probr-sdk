@@ -25,20 +25,9 @@ var Spinner *spinner.Spinner
 // GetTags returns Tags, prioritising command line parameter over vars file
 func (ctx *VarOptions) GetTags() string {
 	if ctx.Tags == "" {
-		ctx.handleTagExclusions() // only process tag exclusions from vars file if not supplied via the command line
+		ctx.handleTagExclusions(ctx.TagExclusions) // only process tag exclusions from vars file if not supplied via the command line
 	}
 	return ctx.Tags
-}
-
-// Handle tag exclusions provided via the config vars file
-func (ctx *VarOptions) handleTagExclusions() {
-	for _, tag := range ctx.TagExclusions {
-		if ctx.Tags == "" {
-			ctx.Tags = "~@" + tag
-		} else {
-			ctx.Tags = fmt.Sprintf("%s && ~@%s", ctx.Tags, tag)
-		}
-	}
 }
 
 // Init will override config.Vars with the content retrieved from a filepath
