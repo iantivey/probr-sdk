@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/briandowns/spinner"
+	"github.com/citihub/probr-sdk/logging"
 	"github.com/citihub/probr-sdk/utils"
 	"gopkg.in/yaml.v2"
 )
@@ -63,7 +64,7 @@ func Init(configPath string) error {
 	Vars = config
 	setFromEnvOrDefaults(&Vars) // Set any values not retrieved from file
 
-	SetLogFilter(Vars.LogLevel, os.Stderr) // Set the minimum log level obtained from Vars
+	logging.SetLogFilter(Vars.LogLevel, os.Stderr) // Set the minimum log level obtained from Vars
 	//log.Printf("[DEBUG] Config initialized by %s", utils.CallerName(1))
 
 	Vars.handleConfigFileExclusions()
