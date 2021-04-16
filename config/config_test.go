@@ -147,26 +147,6 @@ func TestAddExclusion(t *testing.T) {
 	checkTagsContainExclusion(config, tag, t)
 }
 
-func TestSetTags(t *testing.T) {
-	vars, _ := NewConfig("")
-	tagName := "@probes/kubernetes"
-	tagID := "k-cra"
-	expected := 0
-	vars.Tags = tagName
-	tags := map[string][]string{tagName: []string{tagID}}
-	t.Log(tags)
-	vars.SetTags(tags)
-	for _, tag := range strings.Split(vars.Tags, ",") {
-		t.Log("Tag found:" + tag)
-		if tag == tagName || tag == "@"+tagID {
-			expected = expected + 1
-		}
-	}
-	if expected != 2 {
-		t.Errorf("Tag name and tag ID were not found in VarOptions.Tags")
-	}
-}
-
 // TestOverwrite ...
 func TestOverwrite(t *testing.T) {
 	vars, _ := NewConfig("")
