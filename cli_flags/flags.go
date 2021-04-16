@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/citihub/probr-sdk/config"
+	"github.com/citihub/probr-sdk/logging"
 	"github.com/citihub/probr-sdk/utils"
 )
 
@@ -107,7 +108,7 @@ func LoglevelHandler(v *string) {
 			log.Fatalf("[ERROR] Unknown loglevel specified: '%s'. Must be one of %v", value, levels)
 		} else {
 			config.Vars.LogLevel = value
-			config.SetLogFilter(config.Vars.LogLevel, os.Stderr)
+			logging.SetLogFilter(config.Vars.LogLevel, os.Stderr)
 		}
 	}
 }
@@ -122,7 +123,7 @@ func ResultsformatHandler(v *string) {
 			log.Fatalf("[ERROR] Unknown resultsformat specified: '%s'. Must be one of %v", value, options)
 		} else {
 			config.Vars.ResultsFormat = value
-			config.SetLogFilter(config.Vars.ResultsFormat, os.Stderr)
+			logging.SetLogFilter(config.Vars.ResultsFormat, os.Stderr)
 		}
 	}
 }
