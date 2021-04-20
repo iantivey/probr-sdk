@@ -96,6 +96,7 @@ func (ps *ProbeStore) GetProbe(name string) (*GodogProbe, error) {
 // ExecProbe executes the test identified by the specified name.
 func (ps *ProbeStore) ExecProbe(name string) (int, error) {
 	p, err := ps.GetProbe(name)
+	log.Printf("Executing Probe: %v", p)
 	if err != nil {
 		return 1, err // Failure
 	}

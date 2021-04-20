@@ -7,15 +7,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// NewConfigDecoder reads the provided into a new yaml decoder
-func NewConfigDecoder(path string) (*yaml.Decoder, error) {
-	file, err := openConfigPath(path)
+// NewConfigDecoder reads the provided into a new yaml decoder and leaves the file open
+func NewConfigDecoder(path string) (decoder *yaml.Decoder, file *os.File, err error) {
+	file, err = openConfigPath(path)
 	if err != nil {
-		return nil, err // err if path can not be validated
+		return // err if path can not be validated
 	}
-	defer file.Close()
-	decoder := yaml.NewDecoder(file) // Init new YAML decode
-	return decoder, nil
+	decoder = yaml.NewDecoder(file) // Init new YAML decode, leave file open
+	return
 }
 
 func openConfigPath(path string) (file *os.File, err error) {

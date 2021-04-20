@@ -26,11 +26,12 @@ func TestNewConfigDecoder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewConfigDecoder(tt.path)
+			_, file, err := NewConfigDecoder(tt.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewConfigDecoder() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			file.Close()
 		})
 	}
 }
