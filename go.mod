@@ -10,5 +10,6 @@ require (
 	github.com/hashicorp/go-plugin v1.4.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/markbates/pkger v0.17.1
+	github.com/open-policy-agent/opa v0.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
