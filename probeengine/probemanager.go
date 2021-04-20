@@ -38,16 +38,6 @@ const (
 	CoreEngine
 )
 
-func (g Group) String() string {
-	return [...]string{"kubernetes", "clouddriver", "probeengine"}[g]
-}
-
-// ProbeDescriptor describes the specific test case and includes name and group.
-type ProbeDescriptor struct {
-	Group Group  `json:"group,omitempty"`
-	Name  string `json:"name,omitempty"`
-}
-
 // ProbeStore maintains a collection of probes to be run and their status.  FailedProbes is an explicit
 // collection of failed probes.
 type ProbeStore struct {
@@ -66,17 +56,22 @@ func NewProbeStore(name string) *ProbeStore {
 }
 
 // AddProbe provided GodogProbe to the ProbeStore.
-func (ps *ProbeStore) AddProbe(preParsedProbe Probe) {
+func (ps *ProbeStore) AddProbe(probe Probe) {
 	ps.Lock.Lock()
 	defer ps.Lock.Unlock()
-
-	probe := makeGodogProbe(ps.Name, preParsedProbe)
 	status := Pending
-	probe.Status = &status
-	ps.Probes[probe.ProbeDescriptor.Name] = probe
 
-	audit.State.GetProbeLog(probe.ProbeDescriptor.Name).Result = probe.Status.String()
-	audit.State.LogProbeMeta(probe.ProbeDescriptor.Name, "group", probe.ProbeDescriptor.Group.String())
+	ps.Probes[probe.Name()] = &GodogProbe{
+		Name:                probe.Name(),
+		Group:               ps.Name,
+		ProbeInitializer:    probe.ProbeInitialize,
+		ScenarioInitializer: probe.ScenarioInitialize,
+		FeaturePath:         probe.Path(),
+		Status:              &status,
+	}
+
+	audit.State.GetProbeLog(probe.Name()).Result = status.String()
+	audit.State.LogProbeMeta(probe.Name(), "group", ps.Name)
 }
 
 // GetProbe returns the test identified by the given name.
@@ -123,14 +118,4 @@ func (ps *ProbeStore) ExecAllProbes() (int, error) {
 		}
 	}
 	return status, err
-}
-
-func makeGodogProbe(pack string, p Probe) *GodogProbe {
-	descriptor := ProbeDescriptor{Group: Kubernetes, Name: p.Name()} //TODO: Hard dependency on Kubernetes group. This should be handled outside of SDK.
-	return &GodogProbe{
-		ProbeDescriptor:     &descriptor,
-		ProbeInitializer:    p.ProbeInitialize,
-		ScenarioInitializer: p.ScenarioInitialize,
-		FeaturePath:         p.Path(),
-	}
 }

@@ -49,7 +49,7 @@ After an probe has finished running every scenario, we should audit the final ou
 
 ```
 s, o, err := g.Handler(g.Data)
-audit.State.ProbeComplete(t.ProbeDescriptor.Name)
+audit.State.ProbeComplete(t.Name)
 ```
 
 **SummaryStateStruct.SetProbrStatus**
