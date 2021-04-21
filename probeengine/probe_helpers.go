@@ -40,7 +40,27 @@ func getOutputPath(t string) (*os.File, error) {
 	return os.Create(filepath.Join(cucumberDirFunc(), fn))
 }
 
-// GetFeaturePath parses a list of strings into a standardized file path
+// GetFilePath parses a list of strings into a standardized file path. The filename should be in the final element of path
+func GetFilePath(path ...string) string {
+	fileName := path[len(path)-1]
+	dirPath := ""
+	for _, folder := range path {
+		dirPath = filepath.Join(dirPath, folder)
+	}
+	//return filepath.Join(dirPath, featureName)
+	featurePath := filepath.Join(dirPath, fileName) // This is the original path to feature file in source code
+
+	// Unpacking/copying feature file to tmp location
+	tmpFeaturePath, err := getTmpFeatureFileFunc(featurePath)
+	if err != nil {
+		log.Printf("Error unpacking feature file '%v' - Error: %v", featurePath, err)
+		return ""
+	}
+	return tmpFeaturePath
+}
+
+// GetFeaturePath parses a list of strings into a standardized file path for the BDD ".feature" files
+// TODO: refactor this to use GetFilePath
 func GetFeaturePath(path ...string) string {
 	featureName := path[len(path)-1] + ".feature"
 	dirPath := ""
