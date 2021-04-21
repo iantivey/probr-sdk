@@ -10,9 +10,9 @@ import (
 )
 
 //TODO: the regoFile will need to be packages using Packagr
-func Eval(regoFile string, regoPackageName string, regoFuncName string, jsonInput *[]byte) (bool, error) {
+func Eval(regoFilePath string, regoPackageName string, regoFuncName string, jsonInput *[]byte) (bool, error) {
 	load := make([]string, 1)
-	load[0] = regoFile
+	load[0] = regoFilePath
 
 	r := rego.New(
 		rego.Query(fmt.Sprintf("x = data.%s.%s", regoPackageName, regoFuncName)),
