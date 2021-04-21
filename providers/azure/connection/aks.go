@@ -5,8 +5,6 @@ import (
 	"log"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2018-03-31/containerservice"
-	//"github.com/Azure/go-autorest/autorest/to"
-	//"github.com/citihub/probr-sdk/providers/azure/connection"
 	"github.com/citihub/probr-sdk/utils"
 )
 
@@ -49,6 +47,7 @@ func NewContainerService(c context.Context, creds AzureCredentials) (cs *AzureMa
 	return
 }
 
+// GetJSONRepresentation returns the JSON representation of an AKS cluster, similar to az aks show. NOTE that the output from this function has differences to the az cli that needs to be accomodated if you are using the JSON created by this function.
 func (amc *AzureManagedCluster) GetJSONRepresentation(resourceGroupName string, clusterName string) (aksJSON []byte, err error) {
 	var cs containerservice.ManagedCluster
 	cs, err = amc.azManagedClustersClient.Get(amc.ctx, resourceGroupName, clusterName)
