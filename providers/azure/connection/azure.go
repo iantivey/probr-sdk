@@ -25,6 +25,7 @@ type AzureConnection struct {
 	credentials      AzureCredentials
 	ResourceGroup    *AzureResourceGroup  // Client obj to interact with Azure Resource Groups
 	StorageAccount   *AzureStorageAccount // Client obj to interact with Azure Storage Accounts
+	ManagedCluster   *AzureManagedCluster // Client obj to interact with Azure Kubernetes Service
 }
 
 // Azure interface defining all azure methods
@@ -33,6 +34,7 @@ type Azure interface {
 	GetResourceGroupByName(name string) (resources.Group, error)
 	CreateStorageAccount(accountName, accountGroupName string, tags map[string]*string, httpsOnly bool, networkRuleSet *storage.NetworkRuleSet) (storage.Account, error)
 	DeleteStorageAccount(resourceGroupName, accountName string) error
+	GetManagedClusterJSON(resourceGroupName, clusterName string) ([]byte, error)
 }
 
 var instance *AzureConnection
@@ -82,6 +84,12 @@ func NewAzureConnection(c context.Context, subscriptionID, tenantID, clientID, c
 			instance.isCloudAvailable = utils.ReformatError("Failed to initialize Azure Storage Account: %v", grpErr)
 			return
 		}
+
+		var csErr error
+		instance.ManagedCluster, csErr = NewContainerService(c, instance.credentials)
+		if csErr != nil {
+			instance.isCloudAvailable = utils.ReformatError("Failed to initialize Azure Kubernetes Service: %v", grpErr)
+		}
 	})
 	return instance
 }
@@ -107,4 +115,9 @@ func (az *AzureConnection) CreateStorageAccount(accountName, accountGroupName st
 func (az *AzureConnection) DeleteStorageAccount(resourceGroupName, accountName string) error {
 	log.Printf("[DEBUG] deleting Storage Account '%s'", accountName)
 	return az.StorageAccount.Delete(resourceGroupName, accountName)
+}
+
+func (az *AzureConnection) GetManagedClusterJSON(resourceGroupName, clusterName string) ([]byte, error) {
+	log.Printf("[DEBUG] getting JSON for AKS Cluster '%s'", clusterName)
+	return az.ManagedCluster.GetJSONRepresentation(resourceGroupName, clusterName)
 }

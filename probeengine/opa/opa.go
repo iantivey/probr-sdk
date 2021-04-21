@@ -36,6 +36,8 @@ func Eval(regoFilePath string, regoPackageName string, regoFuncName string, json
 		return false, err
 	}
 
+	log.Printf("input: %v", input)
+
 	rs, err := query.Eval(ctx, rego.EvalInput(input))
 	if err != nil {
 		log.Printf("error line 38")
