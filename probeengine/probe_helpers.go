@@ -42,21 +42,21 @@ func getOutputPath(t string) (*os.File, error) {
 
 // GetFilePath parses a list of strings into a standardized file path. The filename should be in the final element of path
 func GetFilePath(path ...string) string {
-	fileName := path[len(path)-1]
-	dirPath := ""
+	//fileName := path[len(path)-1]
+	filePath := ""
 	for _, folder := range path {
-		dirPath = filepath.Join(dirPath, folder)
+		filePath = filepath.Join(filePath, folder)
 	}
 	//return filepath.Join(dirPath, featureName)
-	featurePath := filepath.Join(dirPath, fileName) // This is the original path to feature file in source code
+	//featurePath := filepath.Join(dirPath, fileName) // This is the original path to feature file in source code
 
 	// Unpacking/copying feature file to tmp location
-	tmpFeaturePath, err := getTmpFeatureFileFunc(featurePath)
+	tmpFilePath, err := getTmpFeatureFileFunc(filePath)
 	if err != nil {
-		log.Printf("Error unpacking feature file '%v' - Error: %v", featurePath, err)
+		log.Printf("Error unpacking feature file '%v' - Error: %v", filePath, err)
 		return ""
 	}
-	return tmpFeaturePath
+	return tmpFilePath
 }
 
 // GetFeaturePath parses a list of strings into a standardized file path for the BDD ".feature" files
