@@ -6,7 +6,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-04-01/storage"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/citihub/probr-pack-storage/internal/azure"
+	"github.com/citihub/probr-sdk/providers/azure"
 	"github.com/citihub/probr-sdk/utils"
 )
 

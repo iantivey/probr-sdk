@@ -9,7 +9,12 @@ import (
 	"log"
 )
 
-//TODO: the regoFile will need to be packages using Packagr
+// Eval evaluates the 'jsonInput' against the specified rego function in the .rego file.
+// Returns "true" if the function passes (resource is compliant); false if the function does not pass (resource is non-compliant)
+// - regoFilePath = fully qualified filepath to the .rego file
+// - regoPackageName = the name of the rego package at the top of the .rego file
+// - regoFuncName = the rego function to evaluate against
+// - jsonInput = byte representation of the json representation of the resource to eval
 func Eval(regoFilePath string, regoPackageName string, regoFuncName string, jsonInput *[]byte) (bool, error) {
 	load := make([]string, 1)
 	load[0] = regoFilePath
