@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/citihub/probr-sdk/providers/kubernetes/errors"
 	"github.com/citihub/probr-sdk/audit"
 	"github.com/citihub/probr-sdk/config"
+	"github.com/citihub/probr-sdk/providers/kubernetes/errors"
 	"github.com/citihub/probr-sdk/utils"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,6 +44,10 @@ type Connection interface {
 	GetPodIPs(namespace, podName string) (string, string, error)
 	GetRawResourceByName(apiEndPoint, namespace, resourceType, resourceName string) (resource APIResource, err error)
 	PostRawResource(apiEndPoint string, namespace string, resourceName string, resourceBody interface{}) (resource APIResource, err error)
+	CreatePVCFromObject(pvc *apiv1.PersistentVolumeClaim, probeName string) (*apiv1.PersistentVolumeClaim, error)
+	DeletePVCIfExists(pvcName, namespace, probeName string) error
+	GetPVCFromPVCName(pvcName, namespace string) (*apiv1.PersistentVolumeClaim, error)
+	GetPVFromPVName(pvName string) (*apiv1.PersistentVolume, error)
 }
 
 // APIResource encapsulates the response from a raw/rest call to the Kubernetes API when getting a resource by name
@@ -254,6 +258,77 @@ func (connection *Conn) GetPodIPs(namespace, podName string) (podIP string, host
 		return
 	}
 	return pod.Status.PodIP, pod.Status.HostIP, nil
+}
+
+// CreatePVCFromObject creates a PersistentVolumeClaim from the supplied PVC object within an existing namespace
+func (connection *Conn) CreatePVCFromObject(pvc *apiv1.PersistentVolumeClaim, probeName string) (*apiv1.PersistentVolumeClaim, error) {
+	pvcName := pvc.ObjectMeta.Name
+	namespace := pvc.ObjectMeta.Namespace
+
+	if pvc == nil || pvcName == "" || namespace == "" {
+		return nil, fmt.Errorf("one or more of pvc (%v), pvcName (%v) or namespace (%v) is nil - cannot create PVC", pvc, pvcName, namespace)
+	}
+
+	log.Printf("[INFO] Creating PVC %v in namespace %v", pvcName, namespace)
+	log.Printf("[DEBUG] PVC details: %+v", *pvc)
+
+	c := connection.clientSet
+
+	pvcClient := c.CoreV1().PersistentVolumeClaims(namespace)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := pvcClient.Create(ctx, pvc, metav1.CreateOptions{})
+	if err != nil {
+		log.Printf("[INFO] Attempt to create pod '%v' failed with error: '%v'", pvcName, err)
+	} else {
+		log.Printf("[INFO] Attempt to create pod '%v' succeeded", pvcName)
+		audit.State.GetProbeLog(probeName).CountPodCreated(pvcName)
+	}
+	return res, err
+}
+
+// GetPVCFromPVCName returns a PersistentVolumeClaim with the supplied name from the supplied namespace
+func (connection *Conn) GetPVCFromPVCName(pvcName, namespace string) (*apiv1.PersistentVolumeClaim, error) {
+	c := connection.clientSet
+
+	pvcClient := c.CoreV1().PersistentVolumeClaims(namespace)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return pvcClient.Get(ctx, pvcName, metav1.GetOptions{})
+}
+
+// DeletePodIfExists deletes the given pod in the specified namespace.
+func (connection *Conn) DeletePVCIfExists(pvcName, namespace, probeName string) error {
+	clientSet, _ := kubernetes.NewForConfig(connection.clientConfig)
+	pvcClient := clientSet.CoreV1().PersistentVolumeClaims(namespace)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	log.Printf("[DEBUG] Attempting to delete PVC: %s", pvcName)
+
+	err := pvcClient.Delete(ctx, pvcName, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	audit.State.GetProbeLog(probeName).CountPodDestroyed()
+	log.Printf("[INFO] PVC %s deleted.", pvcName)
+	return nil
+}
+
+// GetPVCFromPVCName returns a PersistentVolume with the supplied name
+func (connection *Conn) GetPVFromPVName(pvName string) (*apiv1.PersistentVolume, error) {
+	c := connection.clientSet
+
+	pvClient := c.CoreV1().PersistentVolumes()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	return pvClient.Get(ctx, pvName, metav1.GetOptions{})
 }
 
 // GetRawResourceByName makes a 'raw' REST call to the specified K8s api endpoint to get a resource by name and namespace.
