@@ -12,8 +12,27 @@ import (
 	"github.com/citihub/probr-sdk/config"
 	"github.com/citihub/probr-sdk/utils"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type PersistentVolumeClaimConfig struct {
+	// Name of the PVC. If set, overrides NamePrefix
+	Name string
+	// NamePrefix defaults to "pvc-" if unspecified
+	NamePrefix string
+	// ClaimSize must be specified in the Quantity format. Defaults to 2Gi if
+	// unspecified
+	ClaimSize string
+	// AccessModes defaults to RWO if unspecified
+	AccessModes      []apiv1.PersistentVolumeAccessMode
+	Annotations      map[string]string
+	Selector         *metav1.LabelSelector
+	StorageClassName *string
+	// VolumeMode defaults to nil if unspecified or specified as the empty
+	// string
+	VolumeMode *apiv1.PersistentVolumeMode
+}
 
 // PodSpec constructs a simple pod object
 func PodSpec(baseName string, namespace string) *apiv1.Pod {
@@ -88,6 +107,61 @@ func DefaultEntrypoint() []string {
 		"sleep",
 		"3600",
 	}
+}
+
+// DynamicPersistentVolumeClaim constructs a simple Dynamic PersistentVolumeClaim
+func DynamicPersistentVolumeClaim(baseName, namespace, storageClass string) *apiv1.PersistentVolumeClaim {
+
+	name := strings.Replace(baseName, "_", "-", -1)
+	pvcName := uniquePodName(name)
+
+	config := PersistentVolumeClaimConfig{
+		Name:             pvcName,
+		ClaimSize:        "1Gi",
+		AccessModes:      []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
+		StorageClassName: &storageClass,
+	}
+
+	return &apiv1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      config.Name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"app": "probr-probe",
+			},
+		},
+		Spec: apiv1.PersistentVolumeClaimSpec{
+			AccessModes: config.AccessModes,
+			Resources: apiv1.ResourceRequirements{
+				Requests: apiv1.ResourceList{
+					apiv1.ResourceStorage: resource.MustParse(config.ClaimSize),
+				},
+			},
+			StorageClassName: config.StorageClassName,
+		},
+	}
+}
+
+// AddPVCToPod adds a PersistentVolumeClaim to a Pod
+func AddPVCToPod(pod *apiv1.Pod, pvc *apiv1.PersistentVolumeClaim) {
+	pvcSource := apiv1.PersistentVolumeClaimVolumeSource{
+		ClaimName: pvc.ObjectMeta.Name,
+	}
+
+	volume := apiv1.Volume{
+		Name: "probr",
+		VolumeSource: apiv1.VolumeSource{
+			PersistentVolumeClaim: &pvcSource,
+		},
+	}
+
+	volumeMount := apiv1.VolumeMount{
+		Name:      "probr",
+		MountPath: "/probr",
+	}
+
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
 }
 
 // CapabilityObjectList converts a list of strings into a list of capability objects

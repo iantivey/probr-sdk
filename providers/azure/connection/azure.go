@@ -5,8 +5,10 @@ import (
 	"log"
 	"sync"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2019-04-01/storage"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/citihub/probr-sdk/utils"
@@ -26,15 +28,22 @@ type AzureConnection struct {
 	ResourceGroup    *AzureResourceGroup  // Client obj to interact with Azure Resource Groups
 	StorageAccount   *AzureStorageAccount // Client obj to interact with Azure Storage Accounts
 	ManagedCluster   *AzureManagedCluster // Client obj to interact with Azure Kubernetes Service
+	Disk             *AzureDisk           // Client obj to interact with Azure Disks
 }
 
 // Azure interface defining all azure methods
 type Azure interface {
 	IsCloudAvailable() error
 	GetResourceGroupByName(name string) (resources.Group, error)
+	// Storage Account Functions
 	CreateStorageAccount(accountName, accountGroupName string, tags map[string]*string, httpsOnly bool, networkRuleSet *storage.NetworkRuleSet) (storage.Account, error)
 	DeleteStorageAccount(resourceGroupName, accountName string) error
+	//AKS Functions
 	GetManagedClusterJSON(resourceGroupName, clusterName string) ([]byte, error)
+	//Azure Disk functions
+	GetDisk(resourceGroupName string, diskName string) (d compute.Disk, err error)
+	ParseDiskDetails(diskURI string) (resourceGroupName, diskName string)
+	GetJSONRepresentation(resourceGroupName string, diskName string) (dskJSON []byte, err error)
 }
 
 var instance *AzureConnection
@@ -90,6 +99,12 @@ func NewAzureConnection(c context.Context, subscriptionID, tenantID, clientID, c
 		if csErr != nil {
 			instance.isCloudAvailable = utils.ReformatError("Failed to initialize Azure Kubernetes Service: %v", grpErr)
 		}
+
+		var dskErr error
+		instance.Disk, dskErr = NewDisk(c, instance.credentials)
+		if dskErr != nil {
+			instance.isCloudAvailable = utils.ReformatError("Failed to initialize Azure Disk: %v", grpErr)
+		}
 	})
 	return instance
 }
@@ -120,4 +135,19 @@ func (az *AzureConnection) DeleteStorageAccount(resourceGroupName, accountName s
 func (az *AzureConnection) GetManagedClusterJSON(resourceGroupName, clusterName string) ([]byte, error) {
 	log.Printf("[DEBUG] getting JSON for AKS Cluster '%s'", clusterName)
 	return az.ManagedCluster.GetJSONRepresentation(resourceGroupName, clusterName)
+}
+
+// GetDisk returns the disk client
+func (az *AzureConnection) GetDisk(resourceGroupName string, diskName string) (compute.Disk, error) {
+	return az.Disk.GetDisk(resourceGroupName, diskName)
+}
+
+// ParseDiskDetails parses the resource group name and disk name from an Azure Disk URI
+func (az *AzureConnection) ParseDiskDetails(diskURI string) (string, string) {
+	return az.Disk.ParseDiskDetails(diskURI)
+}
+
+// GetJSONRepresentation returns the JSON representation of an AKS cluster, similar to az aks show. NOTE that the output from this function has differences to the az cli that needs to be accomodated if you are using the JSON created by this function.
+func (az *AzureConnection) GetJSONRepresentation(resourceGroupName string, diskName string) (dskJSON []byte, err error) {
+	return az.Disk.GetJSONRepresentation(resourceGroupName, diskName)
 }
