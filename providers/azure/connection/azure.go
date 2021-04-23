@@ -40,6 +40,8 @@ type Azure interface {
 	DeleteStorageAccount(resourceGroupName, accountName string) error
 	//AKS Functions
 	GetManagedClusterJSON(resourceGroupName, clusterName string) ([]byte, error)
+	GetManagedClusterAdminCredentials(resourceGroupName, clusterName string) (string, error)
+	ClusterHasRoleAssignment(resourceGroupName, clusterName, roleDefName string) (bool, error)
 	//Azure Disk functions
 	GetDisk(resourceGroupName string, diskName string) (d compute.Disk, err error)
 	ParseDiskDetails(diskURI string) (resourceGroupName, diskName string)
@@ -132,9 +134,22 @@ func (az *AzureConnection) DeleteStorageAccount(resourceGroupName, accountName s
 	return az.StorageAccount.Delete(resourceGroupName, accountName)
 }
 
+// GetManagedClusterJSON returns the JSON representation of an AKS cluster, similar to az aks show. NOTE that the output from this function has differences to the az cli that needs to be accomodated if you are using the JSON created by this function.
 func (az *AzureConnection) GetManagedClusterJSON(resourceGroupName, clusterName string) ([]byte, error) {
 	log.Printf("[DEBUG] getting JSON for AKS Cluster '%s'", clusterName)
 	return az.ManagedCluster.GetJSONRepresentation(resourceGroupName, clusterName)
+}
+
+// GetManagedClusterAdminCredentials returns a base64 encoded kubeconfig file for the cluster admin (equivalent to az get-credentials --admin)
+func (az *AzureConnection) GetManagedClusterAdminCredentials(resourceGroupName, clusterName string) (string, error) {
+	log.Printf("[DEBUG] getting Cluster Admin credentials for AKS Cluster '%s'", clusterName)
+	return az.ManagedCluster.GetClusterAdminCredentials(resourceGroupName, clusterName)
+}
+
+// ClusterHasRoleAssignment looks through the Azure role assignments on the cluster and returns true if it find the role assigned.  Note that the roleDefName is the UUID of the role not the friendly name of the role.
+func (az *AzureConnection) ClusterHasRoleAssignment(resourceGroupName, clusterName, roleDefName string) (bool, error) {
+	log.Printf("[DEBUG] Checking if cluster has Kube Cluster Admin role assignments")
+	return az.ManagedCluster.ClusterHasRoleAssignment(resourceGroupName, clusterName, roleDefName)
 }
 
 // GetDisk returns the disk client

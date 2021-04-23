@@ -4,13 +4,8 @@ import (
 	"context"
 	"log"
 	"strings"
-	//"sync"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2021-03-01/compute"
-	//"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
-	//"github.com/Azure/go-autorest/autorest"
-	//"github.com/Azure/go-autorest/autorest/azure/auth"
-	//azconnection "github.com/citihub/probr-sdk/providers/azure/connection"
 	"github.com/citihub/probr-sdk/utils"
 )
 
@@ -67,8 +62,8 @@ func (dsk *AzureDisk) GetDisk(resourceGroupName string, diskName string) (d comp
 	return
 }
 
+// ParseDiskDetails returns the resource group name and disk name of the Managed Disk
 func (dsk *AzureDisk) ParseDiskDetails(diskURI string) (resourceGroupName, diskName string) {
-	///subscriptions/b82de549-1f90-4ed0-9bbe-7632e52b7b3b/resourceGroups/mc_probr-demo-rg_probr-demo-cluster_eastus2/providers/Microsoft.Compute/disks/kubernetes-dynamic-pvc-17a4da65-a206-41af-a3e0-9661dfee9195
 	s := strings.Split(diskURI, "/")
 	resourceGroupName = s[4]
 	diskName = s[8]
