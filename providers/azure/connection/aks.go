@@ -2,9 +2,12 @@ package connection
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	"github.com/Azure/azure-sdk-for-go/services/authorization/mgmt/2015-07-01/authorization"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2018-03-31/containerservice"
+
 	"github.com/citihub/probr-sdk/utils"
 )
 
@@ -59,14 +62,66 @@ func (amc *AzureManagedCluster) GetJSONRepresentation(resourceGroupName string, 
 	return
 }
 
+// GetClusterAdminCredentials returns a base64 encoded kubeconfig file for the cluster admin (equivalent to az get-credentials --admin)
+func (amc *AzureManagedCluster) GetClusterAdminCredentials(resourceGroupName, clusterName string) (kubeconfigBase64 string, err error) {
+
+	credResults, err := amc.azManagedClustersClient.ListClusterAdminCredentials(amc.ctx, resourceGroupName, clusterName)
+
+	if err != nil {
+		log.Printf("Error getting Cluster Admin credentials: %v", err)
+	}
+
+	kc := (*credResults.Kubeconfigs)[0]
+	kubeconfigBase64 = string(*kc.Value)
+
+	return
+}
+
+// ClusterHasRoleAssignment looks through the Azure role assignments on the cluster and returns true if it find the role assigned.  Note that the roleDefName is the UUID of the role not the friendly name of the role.
+func (amc *AzureManagedCluster) ClusterHasRoleAssignment(resourceGroupName, clusterName, roleDefName string) (present bool, err error) {
+	roleAssignmentsClient, _ := amc.getRoleAssignmentsClient(amc.credentials)
+
+	roleDefinitionID := fmt.Sprintf("/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s", amc.credentials.SubscriptionID, roleDefName)
+
+	log.Printf("[DEBUG] Checking Managed Cluster for role name")
+	filter := fmt.Sprintf("atScope()")
+
+	resourceProviderNamespace := "Microsoft.ContainerService"
+	parentResourcePath := ""
+	resourceType := "managedClusters"
+
+	res, err := roleAssignmentsClient.ListForResource(amc.ctx, resourceGroupName, resourceProviderNamespace, parentResourcePath, resourceType, clusterName, filter)
+	if err != nil {
+		log.Printf("Error listing role assignments. %v", err)
+		return false, err
+	}
+
+	for _, v := range res.Values() {
+		log.Printf("[DEBUG] Found role. ID: %s, Name: %s; Type: %s", *v.ID, *v.Name, *v.Type)
+		log.Printf("[DEBUG] Role Definition ID: %s", *v.Properties.RoleDefinitionID)
+		// TODO:
+		if *v.Properties.RoleDefinitionID == roleDefinitionID {
+			log.Printf("Found role assigned to cluster. Returning.")
+			return true, utils.ReformatError("Role assignment found for role %s", roleDefName)
+		}
+	}
+
+	return false, nil
+
+}
+
 func (amc *AzureManagedCluster) getManagedClusterClient(creds AzureCredentials) (csClient containerservice.ManagedClustersClient, err error) {
 
 	log.Printf("Credentials: Subscription: %s", creds.SubscriptionID)
-
 	csClient = containerservice.NewManagedClustersClient(creds.SubscriptionID)
-	// Create an azure container services client object via the connection config vars
-
 	csClient.Authorizer = creds.Authorizer
 
 	return
+}
+
+//TODO: put this in an RBAC .go file
+func (amc *AzureManagedCluster) getRoleAssignmentsClient(creds AzureCredentials) (authorization.RoleAssignmentsClient, error) {
+	roleClient := authorization.NewRoleAssignmentsClient(creds.SubscriptionID)
+	roleClient.Authorizer = creds.Authorizer
+	return roleClient, nil
 }
