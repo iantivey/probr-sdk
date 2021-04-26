@@ -16,22 +16,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// PersistentVolumeClaimConfig holds the state of the PVC
 type PersistentVolumeClaimConfig struct {
-	// Name of the PVC. If set, overrides NamePrefix
-	Name string
-	// NamePrefix defaults to "pvc-" if unspecified
-	NamePrefix string
-	// ClaimSize must be specified in the Quantity format. Defaults to 2Gi if
-	// unspecified
-	ClaimSize string
-	// AccessModes defaults to RWO if unspecified
-	AccessModes      []apiv1.PersistentVolumeAccessMode
+	Name       string // Name of the PVC. If set, overrides NamePrefix
+	NamePrefix string // NamePrefix defaults to "pvc-" if unspecified
+	ClaimSize  string // ClaimSize must be specified in the Quantity format. Defaults to 2Gi if unspecified
+
+	AccessModes      []apiv1.PersistentVolumeAccessMode // AccessModes defaults to RWO if unspecified
 	Annotations      map[string]string
 	Selector         *metav1.LabelSelector
 	StorageClassName *string
-	// VolumeMode defaults to nil if unspecified or specified as the empty
-	// string
-	VolumeMode *apiv1.PersistentVolumeMode
+
+	VolumeMode *apiv1.PersistentVolumeMode // VolumeMode defaults to nil if unspecified or specified as the empty string
 }
 
 // PodSpec constructs a simple pod object
@@ -39,7 +35,7 @@ func PodSpec(baseName string, namespace string) *apiv1.Pod {
 	name := strings.Replace(baseName, "_", "-", -1)
 	podName := uniquePodName(name)
 	containerName := fmt.Sprintf("%s-probe-pod", name)
-	log.Printf(fmt.Sprintf("[DEBUG] Creating pod spec with podName=%s and containerName=%s", podName, containerName))
+	log.Printf("[DEBUG] Creating pod spec with podName=%s and containerName=%s", podName, containerName)
 
 	annotations := make(map[string]string)
 	annotations["seccomp.security.alpha.kubernetes.io/pod"] = "runtime/default"

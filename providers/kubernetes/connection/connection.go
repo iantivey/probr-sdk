@@ -301,7 +301,7 @@ func (connection *Conn) GetPVCFromPVCName(pvcName, namespace string) (*apiv1.Per
 	return pvcClient.Get(ctx, pvcName, metav1.GetOptions{})
 }
 
-// DeletePodIfExists deletes the given pod in the specified namespace.
+// DeletePVCIfExists deletes the given pod in the specified namespace.
 func (connection *Conn) DeletePVCIfExists(pvcName, namespace, probeName string) error {
 	clientSet, _ := kubernetes.NewForConfig(connection.clientConfig)
 	pvcClient := clientSet.CoreV1().PersistentVolumeClaims(namespace)
@@ -319,7 +319,7 @@ func (connection *Conn) DeletePVCIfExists(pvcName, namespace, probeName string) 
 	return nil
 }
 
-// GetPVCFromPVCName returns a PersistentVolume with the supplied name
+// GetPVFromPVName returns a PersistentVolume with the supplied name
 func (connection *Conn) GetPVFromPVName(pvName string) (*apiv1.PersistentVolume, error) {
 	c := connection.clientSet
 

@@ -9,27 +9,26 @@ import (
 	"github.com/citihub/probr-sdk/utils"
 )
 
+// AzureDisk contains the state of the Azure Disk context
 type AzureDisk struct {
 	ctx          context.Context
 	credentials  AzureCredentials
 	azDiskClient compute.DisksClient
 }
 
-func NewDisk(c context.Context, creds AzureCredentials) (dsk *AzureDisk, err error) {
-	// Guard clause - context
-	if c == nil {
+// NewDisk validates the context and credentials, and retrieves the corresponding Disks Client
+func NewDisk(ctx context.Context, creds AzureCredentials) (dsk *AzureDisk, err error) {
+	if ctx == nil {
 		err = utils.ReformatError("Context instance cannot be nil")
 		return
 	}
-
-	// Guard clause - authorizer
 	if creds.Authorizer == nil {
 		err = utils.ReformatError("Authorizer instance cannot be nil")
 		return
 	}
 
 	dsk = &AzureDisk{
-		ctx:         c,
+		ctx:         ctx,
 		credentials: creds,
 	}
 
@@ -40,24 +39,20 @@ func NewDisk(c context.Context, creds AzureCredentials) (dsk *AzureDisk, err err
 		err = utils.ReformatError("Failed to initialize Azure Disks client: %v", dskErr)
 		return
 	}
-
 	return
 }
 
+// Create an azure container services client object via the connection config vars
 func (dsk *AzureDisk) getDisksClient(creds AzureCredentials) (dskClient compute.DisksClient, err error) {
-
-	log.Printf("Credentials: Subscription: %s", creds.SubscriptionID)
-
 	dskClient = compute.NewDisksClient(creds.SubscriptionID)
-	// Create an azure container services client object via the connection config vars
-
 	dskClient.Authorizer = creds.Authorizer
 
 	return
 }
 
-func (dsk *AzureDisk) GetDisk(resourceGroupName string, diskName string) (d compute.Disk, err error) {
-	d, err = dsk.azDiskClient.Get(dsk.ctx, resourceGroupName, diskName)
+// GetDisk Retrieves the specified disk from the specified resource group
+func (dsk *AzureDisk) GetDisk(resourceGroup string, diskName string) (d compute.Disk, err error) {
+	d, err = dsk.azDiskClient.Get(dsk.ctx, resourceGroup, diskName)
 	log.Printf("[DEBUG] GetDisk.d: %v", d)
 	return
 }
