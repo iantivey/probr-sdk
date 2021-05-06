@@ -10,7 +10,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"github.com/citihub/probr-sdk/config"
+	sdk "github.com/citihub/probr-sdk"
 	"github.com/citihub/probr-sdk/utils"
 )
 
@@ -22,14 +22,15 @@ type Probe interface {
 	Path() string
 }
 
-const rootDirName = "probr"
+// This is a var-func in order to be able to mock oiginal behavior during testing.
+var cucumberDirFunc = func() string {
+	cucumberDir := filepath.Join(sdk.GlobalConfig.OutputDir(), "cucumber")
+	_ = os.MkdirAll(cucumberDir, 0755) // Creates if not already existing
+	return cucumberDir
+}
 
-var outputDir *string
-
-// These variables points to the functions. they are used in oder to be able to mock oiginal behavior during testing.
-var cucumberDirFunc = config.Vars.CucumberDir // see TestGetOutputPath
-var getTmpFeatureFileFunc = getTmpFeatureFile // See TestGeatFeaturePath
-var tmpDirFunc = config.Vars.TmpDir           // See Test_getTmpFeatureFile
+// see TestGetOutputPath
+var getTmpFeatureFileFunc = getTmpFeatureFile // See TestGetFeaturePath
 
 // getOutputPath gets the output path for the test based on the output directory
 // plus the test name supplied
@@ -41,14 +42,10 @@ func getOutputPath(t string) (*os.File, error) {
 }
 
 // GetFilePath parses a list of strings into a standardized file path. The filename should be in the final element of path
-func GetFilePath(path ...string) string {
-	//fileName := path[len(path)-1]
-	filePath := ""
-	for _, folder := range path {
-		filePath = filepath.Join(filePath, folder)
+func GetFilePath(path ...string) (filePath string) {
+	for _, entry := range path {
+		filePath = filepath.Join(filePath, entry)
 	}
-	//return filepath.Join(dirPath, featureName)
-	//featurePath := filepath.Join(dirPath, fileName) // This is the original path to feature file in source code
 
 	// Unpacking/copying feature file to tmp location
 	tmpFilePath, err := getTmpFeatureFileFunc(filePath)
@@ -63,27 +60,15 @@ func GetFilePath(path ...string) string {
 // TODO: refactor this to use GetFilePath
 func GetFeaturePath(path ...string) string {
 	featureName := path[len(path)-1] + ".feature"
-	dirPath := ""
-	for _, folder := range path {
-		dirPath = filepath.Join(dirPath, folder)
-	}
-	//return filepath.Join(dirPath, featureName)
-	featurePath := filepath.Join(dirPath, featureName) // This is the original path to feature file in source code
-
-	// Unpacking/copying feature file to tmp location
-	tmpFeaturePath, err := getTmpFeatureFileFunc(featurePath)
-	if err != nil {
-		log.Printf("Error unpacking feature file '%v' - Error: %v", featurePath, err)
-		return ""
-	}
-	return tmpFeaturePath
+	path = append(path, featureName)
+	return GetFilePath(path...)
 }
 
 // getTmpFeatureFile checks if feature file exists in -tmp- folder.
 // If so returns the file path, otherwise unpacks the original file using pkger and copies it to -tmp- location before returning file path.
 func getTmpFeatureFile(featurePath string) (string, error) {
 
-	tmpFeaturePath := filepath.Join(tmpDirFunc(), featurePath)
+	tmpFeaturePath := filepath.Join(sdk.GlobalConfig.TmpDir, featurePath)
 
 	// If file already exists return it
 	_, e := os.Stat(tmpFeaturePath)

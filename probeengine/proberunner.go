@@ -6,8 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/citihub/probr-sdk/audit"
-	"github.com/citihub/probr-sdk/config"
+	sdk "github.com/citihub/probr-sdk"
 	"github.com/cucumber/godog"
 )
 
@@ -24,19 +23,20 @@ type ProbeHandlerFunc func(t *GodogProbe) (int, *bytes.Buffer, error)
 // structure will be passed to the test handler callback.
 type GodogProbe struct {
 	Name                string
-	Group               string
-	FeaturePath         string
+	Pack                string
 	ProbeInitializer    func(*godog.TestSuiteContext)
 	ScenarioInitializer func(*godog.ScenarioContext)
+	FeaturePath         string
 	Status              *ProbeStatus
 	Results             *bytes.Buffer
+	Tags                string
 }
 
-// RunProbe runs the test suite as specified in the provided probe object
+// RunProbe runs the test cases described by the supplied Probe
 func (ps *ProbeStore) RunProbe(probe *GodogProbe) (int, error) {
 
 	if probe == nil {
-		audit.State.GetProbeLog(probe.Name).Result = "Internal Error - Probe not found"
+		ps.Summary.GetProbeLog(probe.Name).Result = "Internal Error - Probe not found"
 		return 2, fmt.Errorf("probe is nil - cannot run test")
 	}
 
@@ -52,18 +52,6 @@ func (ps *ProbeStore) RunProbe(probe *GodogProbe) (int, error) {
 
 	probe.Results = o // If in-mem output provided, store as Results
 	return s, err
-}
-
-// RunAllProbes retrieves and executes all probes that have been included
-func RunAllProbes(packName string, probes []Probe) (int, *ProbeStore, error) {
-	ts := NewProbeStore(packName)
-
-	for _, probe := range probes {
-		ts.AddProbe(probe)
-	}
-
-	s, err := ts.ExecAllProbes() // Executes all added (queued) tests
-	return s, ts, err
 }
 
 //GetAllProbeResults maps ProbeStore results to strings
@@ -94,7 +82,7 @@ func readProbeResults(ps *ProbeStore, name string) (probeResults, probeName stri
 
 // CleanupTmp is used to dispose of any temp resources used during execution
 func CleanupTmp() {
-	err := os.RemoveAll(config.Vars.TmpDir())
+	err := os.RemoveAll(sdk.GlobalConfig.TmpDir)
 	if err != nil {
 		log.Printf("[ERROR] Error removing tmp folder %v", err)
 	}

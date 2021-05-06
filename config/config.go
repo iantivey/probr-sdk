@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -35,15 +36,15 @@ func Init(configPath string) error {
 	config, err := NewConfig(configPath)
 
 	if err != nil {
-		//log.Printf("[ERROR] %v", err)
+		log.Printf("[ERROR] %v", err)
 		return err
 	}
 	config.Meta = Vars.Meta // Persist any existing Meta data
 	Vars = config
 	setFromEnvOrDefaults(&Vars) // Set any values not retrieved from file
 
-	logging.SetLogFilter(Vars.LogLevel, os.Stderr) // Set the minimum log level obtained from Vars
-	//log.Printf("[DEBUG] Config initialized by %s", utils.CallerName(1))
+	SetLogFilter(Vars.LogLevel, os.Stderr) // Set the minimum log level obtained from Vars
+	log.Printf("[DEBUG] Config initialized by %s", utils.CallerName(1))
 
 	Vars.handleConfigFileExclusions()
 
@@ -94,27 +95,20 @@ func ValidateConfigPath(path string) error {
 // LogConfigState will write the config file to the write directory
 func (ctx *VarOptions) LogConfigState() {
 	json, _ := json.MarshalIndent(Vars, "", "  ")
-	//log.Printf("[INFO] Config State: %s", json)
+	log.Printf("[INFO] Config State: %s", json)
 	path := filepath.Join(ctx.GetWriteDirectory(), "config.json")
 	if ctx.WriteConfig == "true" && utils.WriteAllowed(path) {
 		data := []byte(json)
 		ioutil.WriteFile(path, data, 0644)
-		//log.Printf("[NOTICE] Config State written to file %s", path)
+		log.Printf("[NOTICE] Config State written to file %s", path)
 	}
-}
-
-// TmpDir creates and returns -tmp- directory within WriteDirectory
-func (ctx *VarOptions) TmpDir() string {
-	tmpDir := filepath.Join(ctx.GetWriteDirectory(), "tmp")
-	_ = os.MkdirAll(tmpDir, 0755) // Creates if not already existing
-	return tmpDir
 }
 
 // Overwrite returns the string value of the OverwriteHistoricalAudits in bool format
 func (ctx *VarOptions) Overwrite() bool {
 	value, err := strconv.ParseBool(ctx.OverwriteHistoricalAudits)
 	if err != nil {
-		//log.Printf("[ERROR] Could not parse value '%s' for OverwriteHistoricalAudits %s", ctx.OverwriteHistoricalAudits, err)
+		log.Printf("[ERROR] Could not parse value '%s' for OverwriteHistoricalAudits %s", ctx.OverwriteHistoricalAudits, err)
 		return false
 	}
 	return value
@@ -189,41 +183,33 @@ func (a APIM) IsExcluded() bool {
 
 // IsExcluded will log and return exclusion configuration
 func (p Probe) IsExcluded() bool {
-	if p.Excluded != "" {
-		//log.Printf("[NOTICE] Excluding %s probe. Justification: %s", strings.Replace(p.Name, "_", " ", -1), p.Excluded)
-		return true
-	}
-	return false
+	return p.Excluded != ""
 }
 
 // IsExcluded will log and return exclusion configuration
 func (s Scenario) IsExcluded() bool {
-	if s.Excluded != "" {
-		//log.Printf("[NOTICE] Excluding scenario '%s'. Justification: %s", s.Name, s.Excluded)
-		return true
-	}
-	return false
+	return s.Excluded != ""
 }
 
 func validatePackRequirements(name string, object interface{}) bool {
 	// reflect for dynamic type querying
 	storage := reflect.Indirect(reflect.ValueOf(object))
 
-	for _, requirement := range Requirements[name] {
+	for i, requirement := range Requirements[name] {
 		if storage.FieldByName(requirement).String() == "" {
-			if Vars.Meta.RunOnly == "" || strings.ToLower(Vars.Meta.RunOnly) == strings.ToLower(name) {
+			if Vars.Meta.RunOnly == "" || strings.EqualFold(Vars.Meta.RunOnly, name) {
 				// Warn if the pack may have been expected to run
-				//log.Printf("[WARN] Ignoring %s service pack due to required var '%s' not being present.", name, Requirements[name][i])
+				log.Printf("[WARN] Ignoring %s service pack due to required var '%s' not being present.", name, Requirements[name][i])
 			}
 			return true
 		}
 	}
-	if Vars.Meta.RunOnly != "" && strings.ToLower(Vars.Meta.RunOnly) != strings.ToLower(name) {
+	if Vars.Meta.RunOnly != "" && strings.EqualFold(Vars.Meta.RunOnly, name) {
 		// If another pack is specified as RunOnly, this should be excluded
-		//log.Printf("[NOTICE] Ignoring %s service pack due to %s being specified by 'probr run <SERVICE-PACK-NAME>'", name, Vars.Meta.RunOnly)
+		log.Printf("[NOTICE] Ignoring %s service pack due to %s being specified by 'probr run <SERVICE-PACK-NAME>'", name, Vars.Meta.RunOnly)
 		return true
 	}
-	//log.Printf("[NOTICE] %s service pack included.", name)
+	log.Printf("[NOTICE] %s service pack included.", name)
 	return false
 }
 

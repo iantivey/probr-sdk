@@ -11,6 +11,7 @@ import (
 	"github.com/citihub/probr-sdk/utils"
 )
 
+// AzureManagedCluster holds the state of the Azure context
 type AzureManagedCluster struct {
 	ctx                     context.Context
 	credentials             AzureCredentials

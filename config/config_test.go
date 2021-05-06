@@ -31,7 +31,7 @@ func newConfigWithScenarioExclusionAndInclusion() (config VarOptions, excludedTa
 		config.ServicePacks.Kubernetes.Probes,
 		Probe{
 			Name:      "container_registry_access",
-			Scenarios: []Scenario{Scenario{Name: "this guy"}},
+			Scenarios: []Scenario{{Name: "this guy"}},
 		},
 	)
 	config.ServicePacks.Kubernetes.Probes[0].Scenarios = append(
@@ -147,6 +147,29 @@ func TestAddExclusion(t *testing.T) {
 	checkTagsContainExclusion(config, tag, t)
 }
 
+<<<<<<< HEAD
+=======
+func TestSetTags(t *testing.T) {
+	vars, _ := NewConfig("")
+	tagName := "@probes/kubernetes"
+	tagID := "k-cra"
+	expected := 0
+	vars.Tags = tagName
+	tags := map[string][]string{tagName: {tagID}}
+	t.Log(tags)
+	vars.SetTags(tags)
+	for _, tag := range strings.Split(vars.Tags, ",") {
+		t.Log("Tag found:" + tag)
+		if tag == tagName || tag == "@"+tagID {
+			expected = expected + 1
+		}
+	}
+	if expected != 2 {
+		t.Errorf("Tag name and tag ID were not found in VarOptions.Tags")
+	}
+}
+
+>>>>>>> upstream/main
 // TestOverwrite ...
 func TestOverwrite(t *testing.T) {
 	vars, _ := NewConfig("")

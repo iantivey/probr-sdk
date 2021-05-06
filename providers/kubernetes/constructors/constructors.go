@@ -9,37 +9,32 @@ import (
 	"strings"
 	"time"
 
-	"github.com/citihub/probr-sdk/config"
 	"github.com/citihub/probr-sdk/utils"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// PersistentVolumeClaimConfig holds the state of the PVC
 type PersistentVolumeClaimConfig struct {
-	// Name of the PVC. If set, overrides NamePrefix
-	Name string
-	// NamePrefix defaults to "pvc-" if unspecified
-	NamePrefix string
-	// ClaimSize must be specified in the Quantity format. Defaults to 2Gi if
-	// unspecified
-	ClaimSize string
-	// AccessModes defaults to RWO if unspecified
-	AccessModes      []apiv1.PersistentVolumeAccessMode
+	Name       string // Name of the PVC. If set, overrides NamePrefix
+	NamePrefix string // NamePrefix defaults to "pvc-" if unspecified
+	ClaimSize  string // ClaimSize must be specified in the Quantity format. Defaults to 2Gi if unspecified
+
+	AccessModes      []apiv1.PersistentVolumeAccessMode // AccessModes defaults to RWO if unspecified
 	Annotations      map[string]string
 	Selector         *metav1.LabelSelector
 	StorageClassName *string
-	// VolumeMode defaults to nil if unspecified or specified as the empty
-	// string
-	VolumeMode *apiv1.PersistentVolumeMode
+
+	VolumeMode *apiv1.PersistentVolumeMode // VolumeMode defaults to nil if unspecified or specified as the empty string
 }
 
 // PodSpec constructs a simple pod object
-func PodSpec(baseName string, namespace string) *apiv1.Pod {
+func PodSpec(baseName, namespace, image string) *apiv1.Pod {
 	name := strings.Replace(baseName, "_", "-", -1)
 	podName := uniquePodName(name)
 	containerName := fmt.Sprintf("%s-probe-pod", name)
-	log.Printf(fmt.Sprintf("[DEBUG] Creating pod spec with podName=%s and containerName=%s", podName, containerName))
+	log.Printf("[DEBUG] Creating pod spec with podName=%s and containerName=%s", podName, containerName)
 
 	annotations := make(map[string]string)
 	annotations["seccomp.security.alpha.kubernetes.io/pod"] = "runtime/default"
@@ -58,7 +53,7 @@ func PodSpec(baseName string, namespace string) *apiv1.Pod {
 			Containers: []apiv1.Container{
 				{
 					Name:            containerName,
-					Image:           DefaultProbrImageName(),
+					Image:           image,
 					ImagePullPolicy: apiv1.PullIfNotPresent,
 					Command:         DefaultEntrypoint(),
 					SecurityContext: DefaultContainerSecurityContext(),
@@ -90,15 +85,6 @@ func DefaultPodSecurityContext() *apiv1.PodSecurityContext {
 		RunAsGroup:         utils.Int64Ptr(3000),
 		SupplementalGroups: []int64{1},
 	}
-}
-
-// DefaultProbrImageName joins the registry and image name specified in config vars
-func DefaultProbrImageName() string {
-	// Service pack will not start without these vars, so we can rely on them being present
-	return fmt.Sprintf(
-		"%s/%s",
-		config.Vars.ServicePacks.Kubernetes.AuthorisedContainerRegistry,
-		config.Vars.ServicePacks.Kubernetes.ProbeImage)
 }
 
 // DefaultEntrypoint is used by all default pods
@@ -181,7 +167,7 @@ func uniquePodName(baseName string) string {
 	//take base and add some uniqueness
 	t := time.Now()
 	rand.Seed(t.UnixNano())
-	uniq := fmt.Sprintf("%v-%v", t.Format("020106-150405"), rand.Intn(100))
+	uniq := fmt.Sprintf("%v-%v%v", t.Format("020106-150405"), rand.Intn(100), rand.Intn(100))
 
 	return fmt.Sprintf("%v-%v", baseName, uniq)
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/citihub/probr-sdk/config"
+	sdk "github.com/citihub/probr-sdk"
 	"github.com/citihub/probr-sdk/utils"
 	"github.com/cucumber/godog"
 )
@@ -38,9 +38,6 @@ func TestGetOutputPath(t *testing.T) {
 	f := "test_file"
 	desiredFile := filepath.Join(d, f) + ".json"
 	defer func() {
-
-		cucumberDirFunc = config.Vars.CucumberDir //Restoring to original function after test
-
 		// Cleanup test assets
 		file.Close()
 		err := os.RemoveAll(d)
@@ -121,16 +118,9 @@ func TestGetFeaturePath(t *testing.T) {
 
 func Test_getTmpFeatureFile(t *testing.T) {
 
-	testTmpDir := filepath.Join(testFolder, utils.RandomString(10))
-
-	// Faking original behavior
-	tmpDirFunc = func() string {
-		return testTmpDir
-	}
+	sdk.GlobalConfig.TmpDir = filepath.Join(testFolder, utils.RandomString(10))
 	defer func() {
-		tmpDirFunc = config.Vars.TmpDir //Restoring to original function after test
-
-		os.RemoveAll(testTmpDir) // Delete test data after tests
+		os.RemoveAll(sdk.GlobalConfig.TmpDir) // Delete test data after tests
 	}()
 
 	type args struct {
@@ -145,7 +135,7 @@ func Test_getTmpFeatureFile(t *testing.T) {
 		{
 			testName:       "ShouldCreateTmpFolderWithFeatureFile",
 			testArgs:       args{featurePath: filepath.Join("probeengine", "testdata", "Test_getTmpFeatureFile.feature")}, // This cannot be an absolute path, since it will be joined with temp dir
-			expectedResult: filepath.Join(testTmpDir, "probeengine", "testdata", "Test_getTmpFeatureFile.feature"),
+			expectedResult: filepath.Join(sdk.GlobalConfig.TmpDir, "probeengine", "testdata", "Test_getTmpFeatureFile.feature"),
 			expectedErr:    false,
 		},
 	}
