@@ -9,10 +9,9 @@ import (
 	"strings"
 	"testing"
 
-<<<<<<< HEAD
-	"github.com/citihub/probr-sdk/config"
 =======
->>>>>>> upstream/main
+	"github.com/citihub/probr-sdk/config"
+>>>>>>> ca37f2ea8737fdbf02015a4dd8668044b0b6e5d3
 	"github.com/citihub/probr-sdk/utils"
 	apiv1 "k8s.io/api/core/v1"
 )
@@ -49,10 +48,9 @@ func TestPodSpec(t *testing.T) {
 	type args struct {
 		baseName                 string
 		namespace                string
-<<<<<<< HEAD
-=======
 		image                    string
->>>>>>> upstream/main
+=======
+>>>>>>> ca37f2ea8737fdbf02015a4dd8668044b0b6e5d3
 		containerSecurityContext *apiv1.SecurityContext
 	}
 	tests := []struct {
@@ -100,7 +98,6 @@ func TestPodSpec(t *testing.T) {
 			},
 		},
 		{
-<<<<<<< HEAD
 			name: "Container uses the default probr image name",
 			args: args{
 				baseName:  "pod4",
@@ -109,7 +106,6 @@ func TestPodSpec(t *testing.T) {
 			want: func(gotPod *apiv1.Pod, args args, t *testing.T) {
 				gotImageName := gotPod.Spec.Containers[0].Image
 				wantImageName := DefaultProbrImageName()
-=======
 			name: "Container uses the provided probr image name",
 			args: args{
 				baseName:  "pod4",
@@ -119,7 +115,8 @@ func TestPodSpec(t *testing.T) {
 			want: func(gotPod *apiv1.Pod, args args, t *testing.T) {
 				gotImageName := gotPod.Spec.Containers[0].Image
 				wantImageName := "thisImage"
->>>>>>> upstream/main
+=======
+>>>>>>> ca37f2ea8737fdbf02015a4dd8668044b0b6e5d3
 				if strings.Compare(gotImageName, wantImageName) != 0 {
 					t.Errorf("PodSpec() got image name '%s', but wanted: '%s'", gotImageName, wantImageName)
 				}
@@ -180,11 +177,10 @@ func TestPodSpec(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-<<<<<<< HEAD
-			got := PodSpec(tt.args.baseName, tt.args.namespace)
-=======
 			got := PodSpec(tt.args.baseName, tt.args.namespace, tt.args.image)
->>>>>>> upstream/main
+=======
+			got := PodSpec(tt.args.baseName, tt.args.namespace)
+>>>>>>> ca37f2ea8737fdbf02015a4dd8668044b0b6e5d3
 			tt.want(got, tt.args, t)
 		})
 	}
@@ -239,7 +235,6 @@ func TestDefaultPodSecurityContext(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
 func TestDefaultProbrImageName(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -272,7 +267,7 @@ func TestDefaultProbrImageName(t *testing.T) {
 }
 
 =======
->>>>>>> upstream/main
+>>>>>>> ca37f2ea8737fdbf02015a4dd8668044b0b6e5d3
 func TestCapabilityObjectList(t *testing.T) {
 	tests := []struct {
 		name         string
